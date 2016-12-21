@@ -9,16 +9,23 @@ Some of these scripts are dependent on files stored on the SD card, and I've gen
 
 This has only been tested on a Teensy 2.0, with the SD card adapter and a 3 position dip switch. The Windows scripts have been tested on Windows 10. 
 
-Current Dip switch configuration: 
+### Current Dip switch configuration: 
 
 000	- No script is executed, the SD Card is mounted. 
+
 001	- Windows. Configures scheduled task to start a meterpreter and PowerShell Empire reverse shell every 12 hours. Requires the user to be part of the Administrator's group. 
+
 010	- Windows. Disables Windows defender and run Mimikatz to dump in memery passwords to a file, and copies this file to the SD card. 
 
-Planned Dip switch configuration:
+
+### Planned Dip switch configuration:
 
 011	- Windows. Dump all saved Wifi passwords to a file on the SD card. 
+
 100	- Mac. https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Payload---OSX-Root-Backdoor
+
 101	- Mac. https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Payload---OSX-User-Backdoor
+
 110	- 
+
 111	- 
