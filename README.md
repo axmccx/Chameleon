@@ -29,3 +29,11 @@ This has only been tested on a Teensy 2.0, with the SD card adapter and a 3 posi
 110	- 
 
 111	- 
+
+
+### To Do List
+
+- [DONE] Separate unsed functions from the Peensy project.
+- Change how the dip switch setting is read.
+- Write clean up script for the 001 script.
+- Work on Planned section.
