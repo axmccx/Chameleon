@@ -11,10 +11,11 @@ https://www.offensive-security.com/offsec/advanced-teensy-penetration-testing-pa
 Ported some ducky payloads from Hak5. https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Payloads. 
 And used some output code from the Kautilya project. https://github.com/samratashok/Kautilya
 
-![Chameleon1](http://imgur.com/2WKu9KM)
-![Chameleon2](http://imgur.com/ZjxdYgm)
+![Chameleon1](http://i.imgur.com/2WKu9KM.jpg)
+![Chameleon2](http://i.imgur.com/ZjxdYgm.jpg)
 
 **Video Demonstration of the Windows payloads** 
+
 <a href="http://www.youtube.com/watch?feature=player_embedded&v=cJuWv0QU-nA
 " target="_blank"><img src="http://img.youtube.com/vi/cJuWv0QU-nA/0.jpg" 
 alt="Chameleon Windows Demo" width="240" height="180" border="10" /></a>
