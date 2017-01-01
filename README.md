@@ -11,6 +11,10 @@ https://www.offensive-security.com/offsec/advanced-teensy-penetration-testing-pa
 Ported some ducky scripts from Hak5. https://github.com/hak5darren/USB-Rubber-Ducky/wiki/Payloads. 
 And ported some output code from the Kautilya project. https://github.com/samratashok/Kautilya
 
+<a href="http://www.youtube.com/watch?feature=player_embedded&v=cJuWv0QU-nA
+" target="_blank"><img src="http://img.youtube.com/vi/cJuWv0QU-nA/0.jpg" 
+alt="Chameleon Windows Demo" width="240" height="180" border="10" /></a>
+
 ## This project is very much a work in progress
 
 Once loaded with the arduino code, the Chameleon USB will execute the specified "script" upon being connected to a PC or Mac. The dip switches are used to chose which one it will perform. 

